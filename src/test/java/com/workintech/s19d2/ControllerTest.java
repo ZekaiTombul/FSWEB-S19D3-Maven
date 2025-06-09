@@ -1,6 +1,5 @@
 package com.workintech.s19d2;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workintech.s19d2.config.SecurityConfig;
 import com.workintech.s19d2.controller.AccountController;
@@ -8,15 +7,13 @@ import com.workintech.s19d2.controller.AuthController;
 import com.workintech.s19d2.dto.RegistrationMember;
 import com.workintech.s19d2.entity.Account;
 import com.workintech.s19d2.entity.Member;
+import com.workintech.s19d2.repository.MemberRepository;
 import com.workintech.s19d2.service.AccountService;
 import com.workintech.s19d2.service.AuthenticationService;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -32,31 +29,29 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(value = {AuthController.class, AccountController.class} )
+@WebMvcTest(controllers = {AuthController.class, AccountController.class})
 @Import(SecurityConfig.class)
-@ExtendWith(ResultAnalyzer2.class)
 class ControllerTest {
 
-
-    @MockBean
-    private AccountService accountService;
-    @MockBean
-    private UserDetailsService userDetailsService;
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private AccountService accountService;
 
     @MockBean
     private AuthenticationService authenticationService;
 
+    @MockBean
+    private UserDetailsService userDetailsService;
+
+    @MockBean
+    private MemberRepository memberRepository; // 🔥 Kritik eklenti
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -102,13 +97,11 @@ class ControllerTest {
     @DisplayName("Register endpoint creates a new member")
     @WithMockUser(username = "admin", authorities = {"ADMIN"})
     void registerCreatesNewMember() throws Exception {
-
         RegistrationMember registrationMember = new RegistrationMember("test@example.com", "password123");
         Member createdMember = new Member();
         createdMember.setEmail(registrationMember.email());
 
         given(authenticationService.register(any(String.class), any(String.class))).willReturn(createdMember);
-
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -123,7 +116,7 @@ class ControllerTest {
     void accessPermittedEndpointsWithoutAuthentication() throws Exception {
         RegistrationMember registrationMember = new RegistrationMember("test@example.com", "password123");
         Member member = new Member();
-        member.setId(1l);
+        member.setId(1L);
         member.setEmail("test@example.com");
         member.setPassword("password123");
 
@@ -133,7 +126,6 @@ class ControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registrationMember)))
                 .andExpect(status().isOk());
-
     }
 
     @Test
@@ -155,6 +147,4 @@ class ControllerTest {
         mockMvc.perform(post("/account"))
                 .andExpect(status().isForbidden());
     }
-
-
 }
